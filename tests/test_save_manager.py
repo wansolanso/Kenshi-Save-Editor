@@ -33,9 +33,10 @@ def _make_faction_record(name: str, record_id: int = 1) -> Record:
 def _populate_save_dir(base: Path) -> Path:
     """Write a minimal quick.save into base and return the directory."""
     sf = SaveFile(path=str(base / "quick.save"))
-    sf.header = Header(filetype=15, next_id=10, record_count=2)
+    sf.header = Header(filetype=15, next_id=10)
     sf.records.append(_make_character_record("Beep", "204-gamedata.base", 1))
     sf.records.append(_make_character_record("Bandit", "999-other.mod", 2))
+    sf.header.record_count = len(sf.records)
     write_file(base / "quick.save", sf)
     return base
 
@@ -80,8 +81,9 @@ class TestSaveManagerFiltering:
 
     def test_get_factions(self, tmp_path):
         sf = SaveFile(path="")
-        sf.header = Header(filetype=15, next_id=5, record_count=1)
+        sf.header = Header(filetype=15, next_id=5)
         sf.records.append(_make_faction_record("Holy Nation"))
+        sf.header.record_count = len(sf.records)
         write_file(tmp_path / "quick.save", sf)
 
         mgr = SaveManager()
@@ -109,12 +111,23 @@ class TestSaveManagerModification:
         mgr.mark_modified("quick.save")
         assert "quick.save" in mgr.modified
 
-    def test_save_all_clears_modified(self, test_save_dir):
+    def test_save_all_clears_modified_and_persists(self, test_save_dir):
         mgr = SaveManager()
         mgr.load_save(test_save_dir)
+
+        # Mutate in-memory data
+        sf = mgr.files["quick.save"]
+        sf.records[0].string_fields["name"] = "Modified Beep"
         mgr.mark_modified("quick.save")
         mgr.save_all()
+
         assert len(mgr.modified) == 0
+
+        # Verify persisted to disk by re-loading
+        mgr2 = SaveManager()
+        mgr2.load_save(test_save_dir)
+        reloaded_name = mgr2.files["quick.save"].records[0].string_fields["name"]
+        assert reloaded_name == "Modified Beep"
 
     def test_create_backup(self, test_save_dir):
         mgr = SaveManager()
@@ -123,6 +136,11 @@ class TestSaveManagerModification:
         assert backup is not None
         assert backup.exists()
         assert "_backup_" in backup.name
+
+        # Verify the backup contains the original save file with matching contents
+        original = (test_save_dir / "quick.save").read_bytes()
+        copied = (backup / "quick.save").read_bytes()
+        assert copied == original
 
     def test_typecode_summary(self, test_save_dir):
         mgr = SaveManager()
