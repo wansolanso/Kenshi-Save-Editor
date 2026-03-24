@@ -405,8 +405,19 @@ class Sidebar(QWidget):
 
         # 3. Factions (from quick.save) with relation to player
         if not filt or filt in "factions":
+            def _is_real_faction(name: str) -> bool:
+                up = name.upper().strip()
+                low = name.lower()
+                return not (
+                    up.startswith("BOOLEAN") or
+                    up in ("FACTION", "NONE", "NULL", "DEFAULT", "TEMPLATE") or
+                    "dialogue unlock" in low or
+                    up.startswith("ZSPAWNER") or
+                    up.startswith("DCR ") or
+                    up.startswith("DEBUG ")
+                )
             factions = [(f, r) for f, r in self.manager.get_factions()
-                        if not filt or filt in r.name.lower()]
+                        if _is_real_faction(r.name) and (not filt or filt in r.name.lower())]
             if factions:
                 # Find the player faction index in the relation system
                 player_rel_idx = self._find_player_faction_index()
