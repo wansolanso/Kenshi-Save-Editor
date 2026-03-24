@@ -8,6 +8,7 @@ from PyQt6.QtGui import QColor
 
 from ..models import Record
 from ..game_data import GameDataResolver
+from ..i18n import t
 from ..style import (
     ACCENT, TEXT_DIM, READONLY_CELL_BG, BG_CARD, BORDER
 )
@@ -41,7 +42,7 @@ class FactionEditor(QWidget):
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(16, 12, 16, 12)
 
-        self.title_label = QLabel("Relacoes de Faccao")
+        self.title_label = QLabel(t("faction.title"))
         self.title_label.setStyleSheet("font-size: 16px; font-weight: 700; border: none;")
 
         self.count_badge = QLabel("0")
@@ -63,7 +64,7 @@ class FactionEditor(QWidget):
         # Relations table
         self.table = QTableWidget()
         self.table.setColumnCount(4)
-        self.table.setHorizontalHeaderLabels(["Faction", "Relation", "Trust", "Trust Negative"])
+        self.table.setHorizontalHeaderLabels([t("faction.col_faction"), t("faction.col_relation"), t("faction.col_trust"), t("faction.col_trust_neg")])
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.table.verticalHeader().setVisible(False)
@@ -78,7 +79,7 @@ class FactionEditor(QWidget):
         self._record = record
         self._filename = filename
 
-        self.title_label.setText(f"Relacoes: {record.name}")
+        self.title_label.setText(t("faction.relations_of", name=record.name))
 
         faction_ids = set()
         for key in list(record.long_fields) + list(record.float_fields):
@@ -173,6 +174,6 @@ class FactionEditor(QWidget):
         self._updating = True
         self._record = None
         self.table.setRowCount(0)
-        self.title_label.setText("Relacoes de Faccao")
+        self.title_label.setText(t("faction.title"))
         self.count_badge.setText("0")
         self._updating = False

@@ -14,6 +14,7 @@ from .save_manager import SaveManager
 from .models import Record
 from .constants import TYPECODE_NAMES
 from .game_data import GameDataResolver
+from .i18n import t, set_language, detect_language, get_language
 from .style import STYLESHEET, BG, BG_LIGHT, BORDER, ACCENT, TEXT_DIM, TEXT_MUTED, TITLE, MAIN, load_fonts
 from .widgets.sidebar import Sidebar
 from .widgets.record_editor import RecordEditor
@@ -32,15 +33,15 @@ class WelcomePanel(QWidget):
         icon.setStyleSheet(f"font-size: 48px; color: {TEXT_MUTED}; background: transparent;")
         icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        title = QLabel("Kenshi Save Editor")
+        title = QLabel(t("app.title"))
         title.setStyleSheet(f"font-size: 22px; font-weight: 700; color: {TEXT_DIM}; background: transparent;")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        hint = QLabel("Open a save folder or select a record from the sidebar")
+        hint = QLabel(t("welcome.hint"))
         hint.setStyleSheet(f"font-size: 13px; color: {TEXT_MUTED}; background: transparent;")
         hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        shortcut = QLabel("Ctrl+O to open")
+        shortcut = QLabel(t("welcome.shortcut"))
         shortcut.setStyleSheet(f"""
             font-size: 11px; color: {ACCENT}; background: transparent;
             padding: 6px 16px;
@@ -63,7 +64,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.manager = SaveManager()
         self.resolver = GameDataResolver()
-        self.setWindowTitle("Kenshi Save Editor")
+        self.setWindowTitle(t("app.title"))
         self.resize(1500, 900)
         self._setup_menu()
         self._setup_ui()
@@ -72,31 +73,31 @@ class MainWindow(QMainWindow):
 
     def _setup_menu(self):
         menubar = self.menuBar()
-        file_menu = menubar.addMenu("  &File  ")
+        file_menu = menubar.addMenu(t("menu.file"))
 
-        open_action = QAction("  Open Save...    Ctrl+O", self)
+        open_action = QAction(t("menu.open"), self)
         open_action.setShortcut("Ctrl+O")
         open_action.triggered.connect(self._open_save)
         file_menu.addAction(open_action)
         file_menu.addSeparator()
 
-        save_action = QAction("  Save    Ctrl+S", self)
+        save_action = QAction(t("menu.save"), self)
         save_action.setShortcut("Ctrl+S")
         save_action.triggered.connect(self._save)
         file_menu.addAction(save_action)
 
-        save_as_action = QAction("  Save As...", self)
+        save_as_action = QAction(t("menu.save_as"), self)
         save_as_action.setShortcut("Ctrl+Shift+S")
         save_as_action.triggered.connect(self._save_as)
         file_menu.addAction(save_as_action)
         file_menu.addSeparator()
 
-        backup_action = QAction("  Create Backup", self)
+        backup_action = QAction(t("menu.backup"), self)
         backup_action.triggered.connect(self._create_backup)
         file_menu.addAction(backup_action)
         file_menu.addSeparator()
 
-        quit_action = QAction("  Quit", self)
+        quit_action = QAction(t("menu.quit"), self)
         quit_action.setShortcut("Ctrl+Q")
         quit_action.triggered.connect(self.close)
         file_menu.addAction(quit_action)
@@ -161,15 +162,15 @@ class MainWindow(QMainWindow):
 
         self.character_editor = CharacterEditor(resolver=self.resolver)
         self.character_editor.record_modified.connect(self._on_modified)
-        self.char_tabs.addTab(self.character_editor, "  Stats & Health  ")
+        self.char_tabs.addTab(self.character_editor, t("tab.stats"))
 
         self.inventory_editor = InventoryEditor(resolver=self.resolver)
         self.inventory_editor.record_modified.connect(self._on_modified)
-        self.char_tabs.addTab(self.inventory_editor, "  Inventory  ")
+        self.char_tabs.addTab(self.inventory_editor, t("tab.inventory"))
 
         self.char_fields_editor = RecordEditor()
         self.char_fields_editor.record_modified.connect(self._on_modified)
-        self.char_tabs.addTab(self.char_fields_editor, "  Raw Fields  ")
+        self.char_tabs.addTab(self.char_fields_editor, t("tab.raw"))
 
         char_layout.addWidget(self.char_tabs)
         self.content_stack.addWidget(self.char_page)
@@ -200,18 +201,16 @@ class MainWindow(QMainWindow):
     def _setup_statusbar(self):
         self.statusbar = QStatusBar()
         self.setStatusBar(self.statusbar)
-        self.statusbar.showMessage("Ctrl+O to open a save folder")
+        self.statusbar.showMessage(t("status.no_save"))
 
     def _load_game_data(self):
         ok = self.resolver.load()
         if ok:
-            self.statusbar.showMessage(
-                f"Game data loaded: {self.resolver.total_names} items  |  Ctrl+O to open save"
-            )
+            self.statusbar.showMessage(t("status.game_data", n=self.resolver.total_names))
 
     def _open_save(self):
         directory = QFileDialog.getExistingDirectory(
-            self, "Select save folder",
+            self, t("dialog.select_folder"),
             str(Path.home() / "AppData" / "Local" / "kenshi" / "save")
         )
         if not directory:
@@ -222,7 +221,7 @@ class MainWindow(QMainWindow):
         try:
             self.manager.load_save(directory)
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to load save:\n{e}")
+            QMessageBox.critical(self, t("dialog.error"), f"{t('dialog.load_failed', e=e)}:\n{e}")
             return
 
         self.sidebar.load_data(self.manager)
@@ -230,7 +229,7 @@ class MainWindow(QMainWindow):
         total = sum(len(sf.records) for sf in self.manager.files.values())
         files = len(self.manager.files)
         self.statusbar.showMessage(
-            f"Loaded: {Path(directory).name}  |  {files} files  |  {total} records"
+            t("status.loaded", name=Path(directory).name, files=files, records=total)
         )
         self.setWindowTitle(f"Kenshi Save Editor  -  {Path(directory).name}")
 
@@ -320,31 +319,31 @@ class MainWindow(QMainWindow):
     def _on_modified(self, filename: str):
         self.manager.mark_modified(filename)
         n = len(self.manager.modified)
-        self.statusbar.showMessage(f"{n} file(s) modified  |  Ctrl+S to save")
+        self.statusbar.showMessage(t("status.modified", n=n))
 
     def _save(self):
         if not self.manager.is_loaded:
             return
         if not self.manager.modified:
-            self.statusbar.showMessage("No pending changes.")
+            self.statusbar.showMessage(t("status.no_changes"))
             return
         reply = QMessageBox.question(
-            self, "Save",
-            f"Save {len(self.manager.modified)} modified file(s)?\nCreate a backup first if needed.",
+            self, t("dialog.save"),
+            t("dialog.save_confirm", n=len(self.manager.modified)),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply != QMessageBox.StandardButton.Yes:
             return
         try:
             self.manager.save_all()
-            self.statusbar.showMessage("Saved successfully!")
+            self.statusbar.showMessage(t("status.saved"))
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to save:\n{e}")
+            QMessageBox.critical(self, t("dialog.error"), f"{t('dialog.save_failed', e=e)}:\n{e}")
 
     def _save_as(self):
         if not self.manager.is_loaded:
             return
-        directory = QFileDialog.getExistingDirectory(self, "Save to...")
+        directory = QFileDialog.getExistingDirectory(self, t("dialog.save_to"))
         if not directory:
             return
         for f in self.manager.files:
@@ -353,7 +352,7 @@ class MainWindow(QMainWindow):
         self.manager.save_dir = Path(directory)
         try:
             self.manager.save_all()
-            self.statusbar.showMessage(f"Saved to: {directory}")
+            self.statusbar.showMessage(t("status.saved_to", path=directory))
         except Exception as e:
             self.manager.save_dir = old_dir
             QMessageBox.critical(self, "Error", f"Failed to save:\n{e}")
@@ -363,14 +362,17 @@ class MainWindow(QMainWindow):
             return
         try:
             backup_path = self.manager.create_backup()
-            QMessageBox.information(self, "Backup", f"Backup created:\n{backup_path}")
+            QMessageBox.information(self, t("dialog.backup"), t("dialog.backup_ok", path=backup_path))
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed:\n{e}")
+            QMessageBox.critical(self, t("dialog.error"), str(e))
 
 
 def main():
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
+
+    # Detect system language
+    set_language(detect_language())
 
     # Load Kenshi's actual fonts
     load_fonts(app)
@@ -403,42 +405,34 @@ def main():
             return
         v = update["version"]
         size_mb = update["exe_size"] / 1_048_576
-        msg = (
-            f"A new version is available: v{v}\n"
-            f"(current: v{CURRENT_VERSION})\n\n"
-            f"Download size: {size_mb:.1f} MB\n"
-        )
+        msg = t("update.message", version=v, current=CURRENT_VERSION, size=size_mb)
         if update.get("expected_hash"):
             msg += f"SHA-256: {update['expected_hash'][:16]}...\n"
-        msg += "\nUpdate now?"
+        msg += t("update.confirm")
 
         reply = QMessageBox.question(
-            window, "Update Available", msg,
+            window, t("update.title"), msg,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply != QMessageBox.StandardButton.Yes:
             return
 
         if not is_frozen():
-            QMessageBox.information(
-                window, "Update",
-                f"Running from source. Pull the latest:\n"
-                f"git pull && git checkout v{v}"
-            )
+            QMessageBox.information(window, "Update", t("update.source_hint", v=v))
             return
 
-        window.statusbar.showMessage(f"Downloading v{v}...")
+        window.statusbar.showMessage(t("status.downloading", v=v, pct=0))
 
         def _progress(downloaded, total):
             pct = int(100 * downloaded / total) if total else 0
-            window.statusbar.showMessage(f"Downloading v{v}... {pct}%")
+            window.statusbar.showMessage(t("status.downloading", v=v, pct=pct))
 
         ok, msg_result = download_and_replace(update, progress_callback=_progress)
         if ok:
-            QMessageBox.information(window, "Update", msg_result + "\nThe app will restart.")
+            QMessageBox.information(window, "Update", msg_result + "\n" + t("update.restart"))
             app.quit()
         else:
-            QMessageBox.warning(window, "Update Failed", msg_result)
+            QMessageBox.warning(window, t("update.failed"), msg_result)
 
     QTimer.singleShot(2000, _check_update)
 

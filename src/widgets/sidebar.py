@@ -9,6 +9,7 @@ from PyQt6.QtGui import QCursor, QColor
 from ..models import Record, SaveFile
 from ..save_manager import SaveManager
 from ..game_data import GameDataResolver
+from ..i18n import t
 from ..style import (
     BG_LIGHT, BG_CARD, BG_LIGHTER, BORDER, ACCENT, ACCENT_DIM, ACCENT_HOVER,
     TEXT, TEXT_DIM, TEXT_MUTED, INPUT_BG, SELECTION, SEARCH_INPUT_STYLE,
@@ -290,7 +291,7 @@ class Sidebar(QWidget):
 
         # Search
         self.search = QLineEdit()
-        self.search.setPlaceholderText("\U0001f50d  Search characters...")
+        self.search.setPlaceholderText(t("sidebar.search"))
         self.search.setStyleSheet(SEARCH_INPUT_STYLE)
         self.search.textChanged.connect(self._rebuild)
         layout.addWidget(self.search)
@@ -396,12 +397,12 @@ class Sidebar(QWidget):
         # 1. My Characters (player faction)
         total_player = sum(len(v) for v in player_squads.values())
         if total_player:
-            self._add_section("My Squad", total_player, True, player_squads, is_player=True)
+            self._add_section(t("sidebar.my_squad"), total_player, True, player_squads, is_player=True)
 
         # 2. NPCs
         total_npc = sum(len(v) for v in npc_squads.values())
         if total_npc:
-            self._add_section("NPCs", total_npc, False, npc_squads, is_player=False)
+            self._add_section(t("sidebar.npcs"), total_npc, False, npc_squads, is_player=False)
 
         # 3. Factions (from quick.save) with relation to player
         if not filt or filt in "factions":
@@ -427,7 +428,7 @@ class Sidebar(QWidget):
                 # Find the player faction index in the relation system
                 player_rel_idx = self._find_player_faction_index()
 
-                header = SectionHeader("Factions", len(factions), expanded=False)
+                header = SectionHeader(t("sidebar.factions"), len(factions), expanded=False)
                 self.content_layout.addWidget(header)
                 container = QWidget()
                 container_layout = QVBoxLayout(container)

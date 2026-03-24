@@ -10,6 +10,7 @@ from PyQt6.QtGui import QColor
 
 from ..models import Record
 from ..game_data import GameDataResolver
+from ..i18n import t
 from ..constants import (
     CHARACTER_STATS, STAT_DISPLAY, BODY_PART_NAMES,
     MEDICAL_FIELD_DISPLAY, LIMB_NAMES, LIMB_STATUS
@@ -69,7 +70,7 @@ class CharacterEditor(QWidget):
 
         name_row = QHBoxLayout()
         name_row.setSpacing(10)
-        lbl = QLabel("Name")
+        lbl = QLabel(t("char.name"))
         lbl.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px; border: none;")
         self.name_edit = QLineEdit()
         self.name_edit.setMinimumWidth(200)
@@ -78,7 +79,7 @@ class CharacterEditor(QWidget):
         name_row.addWidget(self.name_edit)
         name_row.addStretch()
 
-        lbl2 = QLabel("Age")
+        lbl2 = QLabel(t("char.age"))
         lbl2.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px; border: none;")
         self.age_spin = QDoubleSpinBox()
         self.age_spin.setRange(0, 100)
@@ -97,7 +98,7 @@ class CharacterEditor(QWidget):
         main.addWidget(info_card)
 
         # ---- No Stats Warning ----
-        self.no_stats_label = QLabel("This character has no stats record (may be an animal or robot)")
+        self.no_stats_label = QLabel(t("char.no_stats"))
         self.no_stats_label.setStyleSheet(f"""
             color: {WARNING};
             font-size: 12px;
@@ -110,7 +111,7 @@ class CharacterEditor(QWidget):
         main.addWidget(self.no_stats_label)
 
         # ---- Stats ----
-        stats_group = QGroupBox("Stats & Skills")
+        stats_group = QGroupBox(t("section.stats"))
         stats_layout = QGridLayout()
         stats_layout.setContentsMargins(12, 24, 12, 12)
         stats_layout.setSpacing(6)
@@ -162,14 +163,14 @@ class CharacterEditor(QWidget):
         main.addWidget(stats_group)
 
         # ---- Health ----
-        health_group = QGroupBox("Health")
+        health_group = QGroupBox(t("section.health"))
         health_layout = QVBoxLayout()
         health_layout.setContentsMargins(12, 24, 12, 12)
         health_layout.setSpacing(10)
 
         vitals = QHBoxLayout()
         vitals.setSpacing(20)
-        for label_text, attr, max_v in [("Blood", "blood_spin", 300), ("Hunger", "hunger_spin", 300)]:
+        for label_text, attr, max_v in [(t("char.blood"), "blood_spin", 300), (t("char.hunger"), "hunger_spin", 300)]:
             v = QVBoxLayout()
             v.setSpacing(2)
             l = QLabel(label_text)
@@ -204,7 +205,7 @@ class CharacterEditor(QWidget):
         main.addWidget(health_group)
 
         # ---- Limbs ----
-        limbs_group = QGroupBox("Limbs")
+        limbs_group = QGroupBox(t("section.limbs"))
         limbs_layout = QGridLayout()
         limbs_layout.setContentsMargins(12, 24, 12, 12)
         limbs_layout.setSpacing(10)

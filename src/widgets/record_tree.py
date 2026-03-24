@@ -8,6 +8,7 @@ from PyQt6.QtGui import QFont, QColor, QIcon
 
 from ..models import Record
 from ..constants import TYPECODE_NAMES
+from ..i18n import t
 from ..style import (
     SEARCH_INPUT_STYLE, COUNT_LABEL_STYLE, ACCENT, TEXT_DIM,
     BG_CARD, BORDER, TEXT_MUTED
@@ -41,13 +42,13 @@ class RecordTree(QWidget):
         layout.setSpacing(8)
 
         # Title
-        title = QLabel("Records")
+        title = QLabel(t("sidebar.records"))
         title.setStyleSheet("font-size: 16px; font-weight: 700; padding: 4px 0;")
         layout.addWidget(title)
 
         # Search bar
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("\U0001f50d  Buscar records...")
+        self.search_input.setPlaceholderText(t("sidebar.search"))
         self.search_input.setStyleSheet(SEARCH_INPUT_STYLE)
         self.search_input.textChanged.connect(self._filter)
         layout.addWidget(self.search_input)
@@ -59,7 +60,7 @@ class RecordTree(QWidget):
 
         # Tree
         self.tree = QTreeWidget()
-        self.tree.setHeaderLabels(["Nome", "Tipo", "ID"])
+        self.tree.setHeaderLabels([t("tree.col_name"), t("tree.col_type"), "ID"])
         self.tree.setColumnWidth(0, 200)
         self.tree.setColumnWidth(1, 80)
         self.tree.setIndentation(16)
