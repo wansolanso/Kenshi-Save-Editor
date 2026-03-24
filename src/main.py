@@ -220,7 +220,6 @@ class MainWindow(QMainWindow):
 
     def _change_language(self, lang: str):
         set_language(lang)
-        # Rebuild the entire window
         save_dir = self.manager.save_dir
         geo = self.geometry()
         self.menuBar().clear()
@@ -239,10 +238,25 @@ class MainWindow(QMainWindow):
             self.statusbar.showMessage(t("status.loaded", name=save_dir.name, files=files, records=total))
             self.setWindowTitle(f"{t('app.title')}  -  {save_dir.name}")
 
+    def _find_default_save_dir(self) -> str:
+        """Find the best default directory for the file open dialog."""
+        candidates = [
+            Path.home() / "AppData" / "Local" / "kenshi" / "save",
+            Path("C:/Program Files (x86)/GOG Galaxy/Games/Kenshi/save"),
+            Path("C:/Program Files/GOG Galaxy/Games/Kenshi/save"),
+            Path("C:/GOG Games/Kenshi/save"),
+            Path("C:/Program Files (x86)/Steam/steamapps/common/Kenshi/save"),
+            Path.home() / ".local" / "share" / "Steam" / "steamapps" / "compatdata" / "233860" / "pfx" / "drive_c" / "users" / "steamuser" / "AppData" / "Local" / "kenshi" / "save",
+        ]
+        for p in candidates:
+            if p.exists():
+                return str(p)
+        return str(Path.home())
+
     def _open_save(self):
         directory = QFileDialog.getExistingDirectory(
             self, t("dialog.select_folder"),
-            str(Path.home() / "AppData" / "Local" / "kenshi" / "save")
+            self._find_default_save_dir()
         )
         if not directory:
             return
@@ -270,7 +284,9 @@ class MainWindow(QMainWindow):
             assoc = self._find_associated_records(filename, record)
             self.character_editor.load_character(
                 filename, record,
-                assoc.get("stats"), assoc.get("medical")
+                assoc.get("stats"), assoc.get("medical"),
+                stats_filename=assoc.get("stats_filename", filename),
+                medical_filename=assoc.get("medical_filename", filename),
             )
             inv_items = assoc.get("inventory", [])
             self.inventory_editor.load_items(filename, inv_items)
@@ -311,7 +327,8 @@ class MainWindow(QMainWindow):
 
         char_name = character.string_fields.get("name", "")
 
-        # 1) Adjacent scan for inventory/appearance/ai/detail (these ARE always adjacent)
+        # 1) Adjacent scan for inventory/appearance/ai/detail/stats
+        #    Stats may or may not be adjacent depending on save format
         result: dict = {"inventory": []}
         for rec in sf.records[char_idx + 1:]:
             if rec.typecode == 36:
@@ -324,26 +341,48 @@ class MainWindow(QMainWindow):
                 result["ai"] = rec
             elif rec.typecode == 66 and "detail" not in result:
                 result["detail"] = rec
+            elif rec.typecode == 25 and "stats" not in result:
+                result["stats"] = rec
+                result["stats_filename"] = filename
 
-        # 2) Stats: always search by name (records are interleaved, adjacent is unreliable)
-        if char_name:
+        # 2) Stats fallback: search by name in same file
+        if "stats" not in result and char_name:
             for rec in sf.records:
                 if rec.typecode == 25 and rec.name == char_name:
                     result["stats"] = rec
+                    result["stats_filename"] = filename
                     break
 
-        # 3) Medical: look near the stats record (medical has name="0", no other way to match)
+        # 3) Stats fallback: search by name across ALL loaded files
+        if "stats" not in result and char_name:
+            for other_fname, other_sf in self.manager.files.items():
+                if other_fname == filename:
+                    continue
+                for rec in other_sf.records:
+                    if rec.typecode == 25 and rec.name == char_name:
+                        result["stats"] = rec
+                        result["stats_filename"] = other_fname
+                        break
+                if "stats" in result:
+                    break
+
+        # 4) Medical: look near the stats record (medical has name="0", no other way to match)
         if "stats" in result:
-            stats_idx = sf.records.index(result["stats"])
-            # Search a few positions before and after stats
-            for rec in sf.records[max(0, stats_idx - 3):stats_idx]:
-                if rec.typecode == 57:
-                    result["medical"] = rec
-            if "medical" not in result:
-                for rec in sf.records[stats_idx + 1:min(len(sf.records), stats_idx + 4)]:
+            stats_fname = result["stats_filename"]
+            stats_sf = self.manager.files.get(stats_fname)
+            if stats_sf:
+                stats_idx = stats_sf.records.index(result["stats"])
+                # Search a few positions before and after stats
+                for rec in stats_sf.records[max(0, stats_idx - 3):stats_idx]:
                     if rec.typecode == 57:
                         result["medical"] = rec
-                        break
+                        result["medical_filename"] = stats_fname
+                if "medical" not in result:
+                    for rec in stats_sf.records[stats_idx + 1:min(len(stats_sf.records), stats_idx + 4)]:
+                        if rec.typecode == 57:
+                            result["medical"] = rec
+                            result["medical_filename"] = stats_fname
+                            break
 
         return result
 
