@@ -410,11 +410,16 @@ class Sidebar(QWidget):
                 low = name.lower()
                 return not (
                     up.startswith("BOOLEAN") or
-                    up in ("FACTION", "NONE", "NULL", "DEFAULT", "TEMPLATE") or
-                    "dialogue unlock" in low or
                     up.startswith("ZSPAWNER") or
                     up.startswith("DCR ") or
-                    up.startswith("DEBUG ")
+                    up.startswith("DCR_") or
+                    up.startswith("DEBUG ") or
+                    up.startswith("DEX") or
+                    "spawner" in low or
+                    "template" in low or
+                    "test" in low or
+                    "dialogue unlock" in low or
+                    up in ("FACTION", "NONE", "NULL", "DEFAULT")
                 )
             factions = [(f, r) for f, r in self.manager.get_factions()
                         if _is_real_faction(r.name) and (not filt or filt in r.name.lower())]

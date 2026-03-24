@@ -88,33 +88,44 @@ class FactionEditor(QWidget):
                     if fid.isdigit():
                         faction_ids.add(fid)
 
-        faction_ids = sorted(faction_ids, key=int)
-        self.count_badge.setText(str(len(faction_ids)))
-        self.table.setRowCount(len(faction_ids))
+        # Resolve all faction names and filter out mod artifacts
+        def _resolve_faction(fid: str) -> tuple[str, bool]:
+            """Returns (display_name, is_real_faction)."""
+            if not self.resolver:
+                return fid, True
+            sid_key = f"relationSID{fid}"
+            faction_sid = record.string_fields.get(sid_key, "")
+            if not faction_sid:
+                return fid, True
+            resolved = self.resolver.resolve(faction_sid)
+            if resolved == faction_sid:
+                return fid, True
+            up = resolved.upper().strip()
+            low = resolved.lower()
+            is_artifact = (
+                up.startswith("BOOLEAN") or
+                up.startswith("ZSPAWNER") or
+                up.startswith("DCR ") or up.startswith("DCR_") or
+                up.startswith("DEBUG ") or
+                up.startswith("DEX") or
+                "spawner" in low or
+                "template" in low or
+                "test" in low or
+                "dialogue unlock" in low or
+                up in ("FACTION", "NONE", "NULL", "DEFAULT")
+            )
+            return resolved, not is_artifact
 
-        for row, fid in enumerate(faction_ids):
-            # Resolve faction ID to name — relationSID points to the actual faction record
-            faction_display = fid
-            if self.resolver:
-                sid_key = f"relationSID{fid}"
-                faction_sid = record.string_fields.get(sid_key, "")
-                if faction_sid:
-                    resolved = self.resolver.resolve(faction_sid)
-                    if resolved != faction_sid:
-                        upper = resolved.upper()
-                        low = resolved.lower()
-                        # Filter mod config flags and non-faction records
-                        is_mod_artifact = (
-                            upper.startswith("BOOLEAN") or
-                            "dialogue unlock" in low or
-                            upper.strip() in ("FACTION", "NONE", "NULL", "DEFAULT", "TEMPLATE")
-                        )
-                        if is_mod_artifact:
-                            # Show just the mod name cleanly
-                            mod_name = faction_sid.split("-", 1)[1] if "-" in faction_sid else faction_sid
-                            faction_display = f"[{mod_name}]"
-                        else:
-                            faction_display = resolved
+        resolved_factions = []
+        for fid in sorted(faction_ids, key=int):
+            name, is_real = _resolve_faction(fid)
+            if is_real:
+                resolved_factions.append((fid, name))
+
+        self.count_badge.setText(str(len(resolved_factions)))
+        self.table.setRowCount(len(resolved_factions))
+
+        for row, (fid, faction_display) in enumerate(resolved_factions):
             id_item = QTableWidgetItem(faction_display)
             id_item.setFlags(id_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             id_item.setData(Qt.ItemDataRole.UserRole, fid)  # keep raw ID
