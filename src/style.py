@@ -7,7 +7,14 @@ import os
 from pathlib import Path
 
 # ── Load Kenshi fonts ────────────────────────────────────
-FONT_DIR = Path(__file__).parent
+def _get_font_dir() -> Path:
+    """Resolve font directory for both dev and PyInstaller bundle."""
+    import sys
+    if getattr(sys, '_MEIPASS', None):
+        return Path(sys._MEIPASS) / "src"
+    return Path(__file__).parent
+
+FONT_DIR = _get_font_dir()
 
 def load_fonts(app):
     """Register Kenshi's actual fonts with Qt."""
