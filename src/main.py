@@ -279,22 +279,42 @@ class MainWindow(QMainWindow):
         if char_idx is None:
             return {}
 
+        char_name = character.string_fields.get("name", "")
+
+        # 1) Adjacent scan for inventory/appearance/ai/detail (these ARE always adjacent)
         result: dict = {"inventory": []}
         for rec in sf.records[char_idx + 1:]:
             if rec.typecode == 36:
                 break
-            elif rec.typecode == 25:
-                result["stats"] = rec
-            elif rec.typecode == 57:
-                result["medical"] = rec
             elif rec.typecode == 42:
                 result["inventory"].append(rec)
-            elif rec.typecode == 41:
+            elif rec.typecode == 41 and "appearance" not in result:
                 result["appearance"] = rec
-            elif rec.typecode == 67:
+            elif rec.typecode == 67 and "ai" not in result:
                 result["ai"] = rec
-            elif rec.typecode == 66:
+            elif rec.typecode == 66 and "detail" not in result:
                 result["detail"] = rec
+
+        # 2) Stats: always search by name (records are interleaved, adjacent is unreliable)
+        if char_name:
+            for rec in sf.records:
+                if rec.typecode == 25 and rec.name == char_name:
+                    result["stats"] = rec
+                    break
+
+        # 3) Medical: look near the stats record (medical has name="0", no other way to match)
+        if "stats" in result:
+            stats_idx = sf.records.index(result["stats"])
+            # Search a few positions before and after stats
+            for rec in sf.records[max(0, stats_idx - 3):stats_idx]:
+                if rec.typecode == 57:
+                    result["medical"] = rec
+            if "medical" not in result:
+                for rec in sf.records[stats_idx + 1:min(len(sf.records), stats_idx + 4)]:
+                    if rec.typecode == 57:
+                        result["medical"] = rec
+                        break
+
         return result
 
     def _on_modified(self, filename: str):
