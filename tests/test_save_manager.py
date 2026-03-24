@@ -1,0 +1,141 @@
+"""Tests for SaveManager logic."""
+from __future__ import annotations
+import tempfile
+from collections import OrderedDict
+from pathlib import Path
+
+import pytest
+
+from src.save_manager import SaveManager
+from src.binary_parser import write_file
+from src.models import Header, Record, SaveFile
+
+
+def _make_character_record(name: str, faction_id: str, record_id: int = 1) -> Record:
+    rec = Record()
+    rec.typecode = 36  # GAMESTATE_CHARACTER
+    rec.record_id = record_id
+    rec.name = name
+    rec.string_fields = OrderedDict([
+        ("name", name),
+        ("owner faction ID", faction_id),
+    ])
+    return rec
+
+
+def _make_faction_record(name: str, record_id: int = 1) -> Record:
+    rec = Record()
+    rec.typecode = 37  # GAMESTATE_FACTION
+    rec.record_id = record_id
+    rec.name = name
+    return rec
+
+
+def _create_test_save_dir() -> Path:
+    """Create a temp directory with a minimal quick.save file."""
+    tmpdir = Path(tempfile.mkdtemp())
+    sf = SaveFile(path=str(tmpdir / "quick.save"))
+    sf.header = Header(filetype=15, next_id=10, record_count=2)
+    sf.records.append(_make_character_record("Beep", "204-gamedata.base", 1))
+    sf.records.append(_make_character_record("Bandit", "999-other.mod", 2))
+    write_file(tmpdir / "quick.save", sf)
+    return tmpdir
+
+
+class TestSaveManagerLoad:
+    def test_load_creates_file_entries(self):
+        tmpdir = _create_test_save_dir()
+        mgr = SaveManager()
+        mgr.load_save(tmpdir)
+        assert mgr.is_loaded
+        assert "quick.save" in mgr.files
+
+    def test_is_loaded_false_initially(self):
+        mgr = SaveManager()
+        assert not mgr.is_loaded
+
+    def test_load_with_platoon_files(self):
+        tmpdir = _create_test_save_dir()
+        platoon_dir = tmpdir / "platoon"
+        platoon_dir.mkdir()
+        sf = SaveFile(path="")
+        sf.header = Header(filetype=15, next_id=1, record_count=0)
+        write_file(platoon_dir / "squad1.platoon", sf)
+
+        mgr = SaveManager()
+        mgr.load_save(tmpdir)
+        assert "platoon/squad1.platoon" in mgr.files
+
+
+class TestSaveManagerFiltering:
+    def test_get_player_characters(self):
+        tmpdir = _create_test_save_dir()
+        mgr = SaveManager()
+        mgr.load_save(tmpdir)
+
+        players = mgr.get_player_characters()
+        assert len(players) == 1
+        assert players[0][1].string_fields["name"] == "Beep"
+
+    def test_get_factions(self):
+        tmpdir = Path(tempfile.mkdtemp())
+        sf = SaveFile(path="")
+        sf.header = Header(filetype=15, next_id=5, record_count=1)
+        sf.records.append(_make_faction_record("Holy Nation"))
+        write_file(tmpdir / "quick.save", sf)
+
+        mgr = SaveManager()
+        mgr.load_save(tmpdir)
+        factions = mgr.get_factions()
+        assert len(factions) == 1
+        assert factions[0][1].name == "Holy Nation"
+
+    def test_get_records_by_type(self):
+        tmpdir = _create_test_save_dir()
+        mgr = SaveManager()
+        mgr.load_save(tmpdir)
+        chars = mgr.get_records_by_type(36)
+        assert len(chars) == 2
+
+    def test_get_all_records(self):
+        tmpdir = _create_test_save_dir()
+        mgr = SaveManager()
+        mgr.load_save(tmpdir)
+        all_recs = mgr.get_all_records()
+        assert len(all_recs) == 2
+
+
+class TestSaveManagerModification:
+    def test_mark_modified(self):
+        mgr = SaveManager()
+        mgr.mark_modified("quick.save")
+        assert "quick.save" in mgr.modified
+
+    def test_save_all_clears_modified(self):
+        tmpdir = _create_test_save_dir()
+        mgr = SaveManager()
+        mgr.load_save(tmpdir)
+        mgr.mark_modified("quick.save")
+        mgr.save_all()
+        assert len(mgr.modified) == 0
+
+    def test_create_backup(self):
+        tmpdir = _create_test_save_dir()
+        mgr = SaveManager()
+        mgr.load_save(tmpdir)
+        backup = mgr.create_backup()
+        assert backup is not None
+        assert backup.exists()
+        assert "_backup_" in backup.name
+
+    def test_typecode_summary(self):
+        tmpdir = _create_test_save_dir()
+        mgr = SaveManager()
+        mgr.load_save(tmpdir)
+        summary = mgr.get_typecode_summary()
+        assert summary[36] == 2  # 2 CHARACTER records
+
+    def test_typecode_name(self):
+        mgr = SaveManager()
+        assert mgr.typecode_name(36) == "GAMESTATE_CHARACTER"
+        assert mgr.typecode_name(9999) == "TYPE_9999"

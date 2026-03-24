@@ -12,5 +12,4 @@ build/
 *.png
 !kenshi_authentic.png
 !src/*.ttf
-test_*.py
 CLAUDE.md
