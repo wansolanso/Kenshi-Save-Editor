@@ -392,6 +392,56 @@ def main():
     if len(sys.argv) > 1:
         window._load_directory(sys.argv[1])
     window.show()
+
+    # Check for updates in background (non-blocking)
+    from .updater import check_for_update, download_and_replace, is_frozen, CURRENT_VERSION
+    from PyQt6.QtCore import QTimer
+
+    def _check_update():
+        update = check_for_update()
+        if not update:
+            return
+        v = update["version"]
+        size_mb = update["exe_size"] / 1_048_576
+        msg = (
+            f"A new version is available: v{v}\n"
+            f"(current: v{CURRENT_VERSION})\n\n"
+            f"Download size: {size_mb:.1f} MB\n"
+        )
+        if update.get("expected_hash"):
+            msg += f"SHA-256: {update['expected_hash'][:16]}...\n"
+        msg += "\nUpdate now?"
+
+        reply = QMessageBox.question(
+            window, "Update Available", msg,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        if not is_frozen():
+            QMessageBox.information(
+                window, "Update",
+                f"Running from source. Pull the latest:\n"
+                f"git pull && git checkout v{v}"
+            )
+            return
+
+        window.statusbar.showMessage(f"Downloading v{v}...")
+
+        def _progress(downloaded, total):
+            pct = int(100 * downloaded / total) if total else 0
+            window.statusbar.showMessage(f"Downloading v{v}... {pct}%")
+
+        ok, msg_result = download_and_replace(update, progress_callback=_progress)
+        if ok:
+            QMessageBox.information(window, "Update", msg_result + "\nThe app will restart.")
+            app.quit()
+        else:
+            QMessageBox.warning(window, "Update Failed", msg_result)
+
+    QTimer.singleShot(2000, _check_update)
+
     sys.exit(app.exec())
 
 
