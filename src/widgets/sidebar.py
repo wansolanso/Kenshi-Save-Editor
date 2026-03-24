@@ -405,7 +405,7 @@ class Sidebar(QWidget):
             self._add_section(t("sidebar.npcs"), total_npc, False, npc_squads, is_player=False)
 
         # 3. Factions (from quick.save) with relation to player
-        if not filt or filt in "factions":
+        if True:
             def _is_real_faction(name: str) -> bool:
                 up = name.upper().strip()
                 low = name.lower()
