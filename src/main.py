@@ -327,8 +327,7 @@ class MainWindow(QMainWindow):
 
         char_name = character.string_fields.get("name", "")
 
-        # 1) Adjacent scan for inventory/appearance/ai/detail/stats
-        #    Stats may or may not be adjacent depending on save format
+        # 1) Adjacent scan for inventory/appearance/ai/detail
         result: dict = {"inventory": []}
         for rec in sf.records[char_idx + 1:]:
             if rec.typecode == 36:
@@ -341,12 +340,10 @@ class MainWindow(QMainWindow):
                 result["ai"] = rec
             elif rec.typecode == 66 and "detail" not in result:
                 result["detail"] = rec
-            elif rec.typecode == 25 and "stats" not in result:
-                result["stats"] = rec
-                result["stats_filename"] = filename
 
-        # 2) Stats fallback: search by name in same file
-        if "stats" not in result and char_name:
+        # 2) Stats: always match by character name to avoid grabbing
+        #    another character's stats that happen to be adjacent.
+        if char_name:
             for rec in sf.records:
                 if rec.typecode == 25 and rec.name == char_name:
                     result["stats"] = rec
