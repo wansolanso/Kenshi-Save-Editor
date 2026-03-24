@@ -10,10 +10,7 @@ build/
 *.zone
 *.hkt
 *.png
+!kenshi_authentic.png
 !src/*.ttf
-screenshot_*.png
-current_ui.png
-redesign_*.png
-kenshi_authentic.png
 test_*.py
 CLAUDE.md
