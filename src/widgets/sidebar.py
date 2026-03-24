@@ -12,7 +12,7 @@ from ..game_data import GameDataResolver
 from ..style import (
     BG_LIGHT, BG_CARD, BG_LIGHTER, BORDER, ACCENT, ACCENT_DIM, ACCENT_HOVER,
     TEXT, TEXT_DIM, TEXT_MUTED, INPUT_BG, SELECTION, SEARCH_INPUT_STYLE,
-    SUCCESS, WARNING
+    SUCCESS, WARNING, DANGER
 )
 
 PLAYER_FACTION = "204-gamedata.base"
@@ -146,26 +146,113 @@ class CharacterCard(QFrame):
         super().mousePressEvent(ev)
 
 
+class FactionCard(QFrame):
+    """Card for factions showing name + relation to player."""
+    clicked = pyqtSignal(str, object)
+
+    def __init__(self, filename: str, rec: Record, relation: float = 0.0, parent=None):
+        super().__init__(parent)
+        self._filename = filename
+        self._record = rec
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setFixedHeight(44)
+        self._selected = False
+
+        name = rec.name or "???"
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(12, 6, 12, 6)
+        layout.setSpacing(8)
+
+        # Color dot based on relation
+        if relation > 0:
+            dot_color = SUCCESS
+        elif relation < -50:
+            dot_color = DANGER
+        elif relation < 0:
+            dot_color = WARNING
+        else:
+            dot_color = BORDER
+
+        dot = QFrame()
+        dot.setFixedSize(4, 24)
+        dot.setStyleSheet(f"background: {dot_color}; border-radius: 2px; border: none;")
+        layout.addWidget(dot)
+
+        # Name
+        name_lbl = QLabel(name)
+        name_lbl.setStyleSheet(f"font-size: 12px; font-weight: 600; color: {TEXT}; border: none; background: transparent;")
+        layout.addWidget(name_lbl, 1)
+
+        # Relation value
+        if relation != 0.0:
+            sign = "+" if relation > 0 else ""
+            rel_text = f"{sign}{relation:.0f}"
+            if relation > 0:
+                rel_color = SUCCESS
+            elif relation < -50:
+                rel_color = DANGER
+            else:
+                rel_color = WARNING
+        else:
+            rel_text = "0"
+            rel_color = TEXT_MUTED
+
+        rel_lbl = QLabel(rel_text)
+        rel_lbl.setStyleSheet(f"font-size: 11px; font-weight: 700; color: {rel_color}; border: none; background: transparent; font-family: 'Exo 2', monospace;")
+        layout.addWidget(rel_lbl)
+
+        self._apply_style()
+
+    def set_selected(self, sel: bool):
+        self._selected = sel
+        self._apply_style()
+
+    def _apply_style(self):
+        if self._selected:
+            self.setStyleSheet(f"QFrame {{ background-color: {SELECTION}; border: 1px solid {ACCENT_DIM}; border-radius: 6px; }}")
+        else:
+            self.setStyleSheet(f"QFrame {{ background: transparent; border: 1px solid transparent; border-radius: 6px; }} QFrame:hover {{ background: {BG_LIGHTER}; border: 1px solid {BORDER}; }}")
+
+    def mousePressEvent(self, ev):
+        self.clicked.emit(self._filename, self._record)
+        super().mousePressEvent(ev)
+
+
 class SectionHeader(QWidget):
+    """level=0: master section (My Squad, NPCs). level=1: sub-group (individual squads)."""
     toggled = pyqtSignal(bool)
 
-    def __init__(self, title: str, count: int = 0, expanded: bool = True, parent=None):
+    def __init__(self, title: str, count: int = 0, expanded: bool = True,
+                 level: int = 0, parent=None):
         super().__init__(parent)
         self._expanded = expanded
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.setFixedHeight(28)
+
+        if level == 0:
+            self.setFixedHeight(34)
+            left_margin = 6
+            font_size = 11
+            arrow_size = 9
+            color = TEXT_DIM
+        else:
+            self.setFixedHeight(26)
+            left_margin = 18
+            font_size = 10
+            arrow_size = 7
+            color = TEXT_MUTED
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(6, 0, 6, 0)
+        layout.setContentsMargins(left_margin, 0, 6, 0)
         layout.setSpacing(6)
 
         self.arrow = QLabel("\u25bc" if expanded else "\u25b6")
-        self.arrow.setStyleSheet(f"font-size: 8px; color: {TEXT_MUTED}; background: transparent;")
+        self.arrow.setStyleSheet(f"font-size: {arrow_size}px; color: {color}; background: transparent;")
         self.arrow.setFixedWidth(12)
         layout.addWidget(self.arrow)
 
-        self.title_lbl = QLabel(title.upper())
-        self.title_lbl.setStyleSheet(f"font-size: 10px; font-weight: 700; color: {TEXT_MUTED}; letter-spacing: 1px; background: transparent;")
+        self.title_lbl = QLabel(title.upper() if level == 0 else title)
+        self.title_lbl.setStyleSheet(f"font-size: {font_size}px; font-weight: 700; color: {color}; letter-spacing: {'1px' if level == 0 else '0px'}; background: transparent;")
         layout.addWidget(self.title_lbl)
 
         if count:
@@ -253,9 +340,20 @@ class Sidebar(QWidget):
 
         filt = filter_text.lower()
 
+        # Build a map from platoon file key (e.g. "Nameless_1") to the real squad name
+        # from the PLATOON records in quick.save
+        squad_names: dict[str, str] = {}
+        qs = self.manager.files.get("quick.save")
+        if qs:
+            for rec in qs.records:
+                if rec.typecode == 34 and rec.name and rec.string_id:
+                    # string_id = file key like "Martial Arts School_6"
+                    # name = player-given squad name like "Traders"
+                    squad_names[rec.string_id] = rec.name
+
         # Categorize platoons
-        player_squads: dict[str, list] = {}   # player faction platoons
-        npc_squads: dict[str, list] = {}      # everything else
+        player_squads: dict[str, list] = {}
+        npc_squads: dict[str, list] = {}
 
         for fname, sf in sorted(self.manager.files.items()):
             if not fname.endswith(".platoon"):
@@ -267,7 +365,6 @@ class Sidebar(QWidget):
                 name = rec.string_fields.get("name", "")
                 if filt and filt not in name.lower():
                     continue
-                # Find stats
                 stats = None
                 for r2 in sf.records[i+1:]:
                     if r2.typecode == 36:
@@ -275,29 +372,24 @@ class Sidebar(QWidget):
                     if r2.typecode == 25:
                         stats = r2
                         break
+                if stats is None:
+                    for r2 in sf.records:
+                        if r2.typecode == 25 and r2.name == name:
+                            stats = r2
+                            break
                 chars_data.append((fname, rec, stats))
 
             if not chars_data:
                 continue
 
-            platoon_name = fname.replace("platoon/", "").replace(".platoon", "")
+            # Get the real squad name from quick.save PLATOON records
+            file_key = fname.replace("platoon/", "").replace(".platoon", "")
+            platoon_name = squad_names.get(file_key, file_key)
+
             faction = chars_data[0][1].string_fields.get("owner faction ID", "")
 
-            if PLAYER_FACTION in faction:
-                player_squads[platoon_name] = chars_data
-            else:
-                npc_squads[platoon_name] = chars_data
-
-        # Also check for player-named platoons in quick.save (they appear as PLATOON records)
-        player_platoon_names = set()
-        qs = self.manager.files.get("quick.save")
-        if qs:
-            for rec in qs.records:
-                if rec.typecode == 34:  # PLATOON
-                    # Check if it's faction 204
-                    fid = rec.string_fields.get("owner faction ID", "")
-                    if PLAYER_FACTION in fid or rec.name in [k for k in player_squads]:
-                        player_platoon_names.add(rec.name)
+            target = player_squads if PLAYER_FACTION in faction else npc_squads
+            target.setdefault(platoon_name, []).extend(chars_data)
 
         # ---- BUILD UI ----
 
@@ -309,15 +401,18 @@ class Sidebar(QWidget):
         # 2. NPCs
         total_npc = sum(len(v) for v in npc_squads.values())
         if total_npc:
-            self._add_section("NPCs & World", total_npc, False, npc_squads, is_player=False)
+            self._add_section("NPCs", total_npc, False, npc_squads, is_player=False)
 
-        # 3. Factions (from quick.save)
+        # 3. Factions (from quick.save) with relation to player
         if not filt or filt in "factions":
             factions = [(f, r) for f, r in self.manager.get_factions()
                         if not filt or filt in r.name.lower()]
             if factions:
+                # Find the player faction index in the relation system
+                player_rel_idx = self._find_player_faction_index()
+
                 header = SectionHeader("Factions", len(factions), expanded=False)
-                self.content_layout.insertWidget(self.content_layout.count()-1, header)
+                self.content_layout.addWidget(header)
                 container = QWidget()
                 container_layout = QVBoxLayout(container)
                 container_layout.setContentsMargins(0, 0, 0, 0)
@@ -325,20 +420,27 @@ class Sidebar(QWidget):
                 container.setVisible(False)
                 header.toggled.connect(container.setVisible)
 
-                for fname, rec in sorted(factions, key=lambda x: x[1].name):
-                    card = CharacterCard(fname, rec, None)
+                # Sort: allies first, then neutral, then enemies
+                def sort_key(item):
+                    _, rec = item
+                    rel = rec.float_fields.get(f"relation{player_rel_idx}", 0.0) if player_rel_idx else 0.0
+                    return (-rel, rec.name)  # positive first, then by name
+
+                for fname, rec in sorted(factions, key=sort_key):
+                    rel = rec.float_fields.get(f"relation{player_rel_idx}", 0.0) if player_rel_idx else 0.0
+                    card = FactionCard(fname, rec, relation=rel)
                     card.clicked.connect(self._on_card_clicked)
                     self._cards.append(card)
                     container_layout.addWidget(card)
 
-                self.content_layout.insertWidget(self.content_layout.count()-1, container)
+                self.content_layout.addWidget(container)
 
         self.content_layout.addStretch()
 
     def _add_section(self, title: str, count: int, expanded: bool,
                      squads: dict[str, list], is_player: bool):
         header = SectionHeader(title, count, expanded=expanded)
-        self.content_layout.insertWidget(self.content_layout.count()-1, header)
+        self.content_layout.addWidget(header)
 
         container = QWidget()
         container_layout = QVBoxLayout(container)
@@ -348,18 +450,41 @@ class Sidebar(QWidget):
         header.toggled.connect(container.setVisible)
 
         for squad_name, chars in sorted(squads.items()):
-            # Sub-header per squad
-            squad_lbl = QLabel(f"  {squad_name}")
-            squad_lbl.setStyleSheet(f"font-size: 10px; color: {TEXT_MUTED}; font-weight: 600; padding: 6px 0 2px 2px; background: transparent;")
-            container_layout.addWidget(squad_lbl)
+            squad_header = SectionHeader(squad_name, len(chars), expanded=expanded, level=1)
+            container_layout.addWidget(squad_header)
+
+            squad_container = QWidget()
+            squad_inner = QVBoxLayout(squad_container)
+            squad_inner.setContentsMargins(12, 0, 0, 0)
+            squad_inner.setSpacing(2)
+            squad_container.setVisible(expanded)
+            squad_header.toggled.connect(squad_container.setVisible)
 
             for fname, rec, stats in chars:
                 card = CharacterCard(fname, rec, stats, is_player=is_player)
                 card.clicked.connect(self._on_card_clicked)
                 self._cards.append(card)
-                container_layout.addWidget(card)
+                squad_inner.addWidget(card)
 
-        self.content_layout.insertWidget(self.content_layout.count()-1, container)
+            container_layout.addWidget(squad_container)
+
+        self.content_layout.addWidget(container)
+
+    def _find_player_faction_index(self) -> str | None:
+        """Find the numeric index used for the player faction (204) in relation fields."""
+        if not self.manager:
+            return None
+        qs = self.manager.files.get("quick.save")
+        if not qs:
+            return None
+        # Look at any faction record and find which relationSID points to 204-gamedata.base
+        for rec in qs.records:
+            if rec.typecode == 37:
+                for k, v in rec.string_fields.items():
+                    if k.startswith("relationSID") and PLAYER_FACTION in v:
+                        return k.replace("relationSID", "")
+                break  # only need to check one faction
+        return None
 
     def _on_card_clicked(self, filename: str, record: Record):
         for c in self._cards:
