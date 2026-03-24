@@ -93,22 +93,27 @@ class FactionEditor(QWidget):
         self.table.setRowCount(len(faction_ids))
 
         for row, fid in enumerate(faction_ids):
-            # Resolve faction ID to name
-            # Try resolve_by_id first (finds the faction record itself)
-            # Only fall back to relationSID if that fails
+            # Resolve faction ID to name — relationSID points to the actual faction record
             faction_display = fid
             if self.resolver:
-                by_id = self.resolver.resolve_by_id(fid)
-                if by_id != fid:
-                    faction_display = by_id
-                else:
-                    # Try the relationSID which points to the faction's source record
-                    sid_key = f"relationSID{fid}"
-                    faction_sid = record.string_fields.get(sid_key, "")
-                    if faction_sid:
-                        resolved = self.resolver.resolve(faction_sid)
-                        # Skip names that are clearly not faction names (mod config flags)
-                        if resolved != faction_sid and "BOOLEAN" not in resolved.upper():
+                sid_key = f"relationSID{fid}"
+                faction_sid = record.string_fields.get(sid_key, "")
+                if faction_sid:
+                    resolved = self.resolver.resolve(faction_sid)
+                    if resolved != faction_sid:
+                        upper = resolved.upper()
+                        low = resolved.lower()
+                        # Filter mod config flags and non-faction records
+                        is_mod_artifact = (
+                            upper.startswith("BOOLEAN") or
+                            "dialogue unlock" in low or
+                            upper.strip() in ("FACTION", "NONE", "NULL", "DEFAULT", "TEMPLATE")
+                        )
+                        if is_mod_artifact:
+                            # Show just the mod name cleanly
+                            mod_name = faction_sid.split("-", 1)[1] if "-" in faction_sid else faction_sid
+                            faction_display = f"[{mod_name}]"
+                        else:
                             faction_display = resolved
             id_item = QTableWidgetItem(faction_display)
             id_item.setFlags(id_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
