@@ -80,4 +80,4 @@ class TestTranslationCompleteness:
             for lang in supported:
                 if lang not in translations:
                     missing.append(f"{key} missing '{lang}'")
-        assert missing == [], f"Missing translations:\n" + "\n".join(missing)
+        assert missing == [], "Missing translations:\n" + "\n".join(missing)

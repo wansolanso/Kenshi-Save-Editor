@@ -210,7 +210,7 @@ class TestFileRoundTrip:
         finally:
             tmp.unlink(missing_ok=True)
 
-    def test_multiple_records_round_trip(self, populated_record):
+    def test_multiple_records_round_trip(self):
         sf = SaveFile(path="")
         sf.header = Header(filetype=15, next_id=200, record_count=3)
         for i in range(3):
