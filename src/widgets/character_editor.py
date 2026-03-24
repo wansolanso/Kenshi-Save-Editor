@@ -242,11 +242,8 @@ class CharacterEditor(QWidget):
         faction_sid = char_rec.string_fields.get("owner faction ID", "")
         faction_display = faction_sid
         if self.resolver and faction_sid:
-            # Try full SID first, then just the numeric ID
             resolved = self.resolver.resolve(faction_sid)
-            if resolved == faction_sid and "-" in faction_sid:
-                resolved = self.resolver.resolve_by_id(faction_sid.split("-")[0])
-            if resolved != faction_sid and resolved != faction_sid.split("-")[0]:
+            if resolved != faction_sid:
                 faction_display = resolved
         self.faction_label.setText(faction_display or "-")
         self.age_spin.setValue(char_rec.float_fields.get("age", 1.0))
