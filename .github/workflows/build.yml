@@ -1,0 +1,82 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install nuitka ordered-set zstandard
+
+      - name: Build standalone with Nuitka
+        run: |
+          python -m nuitka `
+            --standalone `
+            --windows-console-mode=disable `
+            --windows-company-name="Kenshi Save Editor" `
+            --windows-product-name="Kenshi Save Editor" `
+            --windows-file-version=${{ github.ref_name }}.0 `
+            --windows-product-version=${{ github.ref_name }}.0 `
+            --windows-file-description="Kenshi Save Editor" `
+            --enable-plugin=pyqt6 `
+            --include-data-files=src/Exo2-SemiBold.ttf=src/Exo2-SemiBold.ttf `
+            --include-data-files=src/Exo2-Bold.ttf=src/Exo2-Bold.ttf `
+            --include-data-files=src/Exo2-Medium.ttf=src/Exo2-Medium.ttf `
+            --include-data-files=src/Sentencia_1.ttf=src/Sentencia_1.ttf `
+            --output-filename=KenshiSaveEditor.exe `
+            --output-dir=dist `
+            --assume-yes-for-downloads `
+            entry.py
+
+      - name: Build Inno Setup installer
+        run: |
+          iscc installer.iss
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          cd dist
+          sha256sum KenshiSaveEditor-Setup-*.exe > CHECKSUMS.txt
+          sha256sum entry.dist/KenshiSaveEditor.exe >> CHECKSUMS.txt
+          echo "Built from: ${{ github.sha }} (${{ github.ref_name }})" >> CHECKSUMS.txt
+          cat CHECKSUMS.txt
+
+      - name: Create zip of standalone
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist/entry.dist/* -DestinationPath dist/KenshiSaveEditor-${{ github.ref_name }}-portable.zip
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kenshi-save-editor-${{ github.ref_name }}
+          path: |
+            dist/KenshiSaveEditor-Setup-*.exe
+            dist/KenshiSaveEditor-*-portable.zip
+            dist/CHECKSUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/KenshiSaveEditor-Setup-*.exe
+            dist/KenshiSaveEditor-*-portable.zip
+            dist/CHECKSUMS.txt
+          generate_release_notes: true

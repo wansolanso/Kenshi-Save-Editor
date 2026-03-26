@@ -102,6 +102,16 @@ class MainWindow(QMainWindow):
         quit_action.triggered.connect(self.close)
         file_menu.addAction(quit_action)
 
+        # Language menu
+        lang_menu = menubar.addMenu("  Language  ")
+        for code, label in [("en", "English"), ("pt", "Portugues"), ("es", "Espanol")]:
+            action = QAction(f"  {label}  ", self)
+            action.setCheckable(True)
+            action.setChecked(get_language() == code)
+            action.triggered.connect(lambda checked, c=code: self._change_language(c))
+            lang_menu.addAction(action)
+        self._lang_menu = lang_menu
+
     def _setup_ui(self):
         central = QWidget()
         self.setCentralWidget(central)
@@ -207,6 +217,27 @@ class MainWindow(QMainWindow):
         ok = self.resolver.load()
         if ok:
             self.statusbar.showMessage(t("status.game_data", n=self.resolver.total_names))
+
+    def _change_language(self, lang: str):
+        set_language(lang)
+        # Rebuild the entire window
+        save_dir = self.manager.save_dir
+        geo = self.geometry()
+        self.menuBar().clear()
+        self._setup_menu()
+        old_central = self.centralWidget()
+        self._setup_ui()
+        if old_central:
+            old_central.deleteLater()
+        self.statusbar.showMessage(t("status.no_save"))
+        self.setWindowTitle(t("app.title"))
+        self.setGeometry(geo)
+        if save_dir and self.manager.is_loaded:
+            self.sidebar.load_data(self.manager)
+            total = sum(len(sf.records) for sf in self.manager.files.values())
+            files = len(self.manager.files)
+            self.statusbar.showMessage(t("status.loaded", name=save_dir.name, files=files, records=total))
+            self.setWindowTitle(f"{t('app.title')}  -  {save_dir.name}")
 
     def _open_save(self):
         directory = QFileDialog.getExistingDirectory(

@@ -91,7 +91,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/kenshi-save-editor.git
+git clone https://github.com/wansolanso/Kenshi-Save-Editor.git
 cd kenshi-save-editor
 
 # Create virtual environment
@@ -240,7 +240,7 @@ Contributions are welcome! Here are some areas that could use improvement:
 ### Development Setup
 
 ```bash
-git clone https://github.com/yourusername/kenshi-save-editor.git
+git clone https://github.com/wansolanso/Kenshi-Save-Editor.git
 cd kenshi-save-editor
 python -m venv venv
 venv\Scripts\activate
@@ -250,9 +250,21 @@ python -m src.main
 
 ---
 
+## 🔏 Code Signing Policy
+
+Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+**Team roles:**
+- Committers and reviewers: [Members](https://github.com/orgs/wansolanso/people)
+- Approvers: [Repository owner](https://github.com/wansolanso)
+
+**Privacy policy:** This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. The only network request is an optional update check to the GitHub API (`api.github.com`) which can be declined by the user.
+
+---
+
 ## 📄 License
 
-This project is open source. Kenshi is a registered trademark of Lo-Fi Games.
+[MIT License](LICENSE) — This project is open source. Kenshi is a registered trademark of Lo-Fi Games.
 
 ---
 
