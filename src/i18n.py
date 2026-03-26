@@ -80,13 +80,13 @@ TRANSLATIONS = {
     },
     "status.no_changes": {
         "en": "No pending changes.",
-        "pt": "Nenhuma alteracao pendente.",
+        "pt": "Nenhuma alteração pendente.",
         "es": "Sin cambios pendientes.",
     },
     "status.saved": {
         "en": "Saved successfully!",
         "pt": "Salvo com sucesso!",
-        "es": "Guardado con exito!",
+        "es": "\u00a1Guardado con \u00e9xito!",
     },
     "status.saved_to": {
         "en": "Saved to: {path}",
@@ -96,7 +96,7 @@ TRANSLATIONS = {
     "status.game_data": {
         "en": "Game data loaded: {n} items  |  Ctrl+O to open save",
         "pt": "Dados do jogo carregados: {n} itens  |  Ctrl+O para abrir save",
-        "es": "Datos del juego cargados: {n} items  |  Ctrl+O para abrir guardado",
+        "es": "Datos del juego cargados: {n} \u00edtems  |  Ctrl+O para abrir guardado",
     },
     "status.downloading": {
         "en": "Downloading v{v}... {pct}%",
@@ -107,8 +107,8 @@ TRANSLATIONS = {
     # ── Dialogs ──
     "dialog.save_confirm": {
         "en": "Save {n} modified file(s)?\nCreate a backup first if needed.",
-        "pt": "Salvar {n} arquivo(s) modificado(s)?\nCrie um backup antes se necessario.",
-        "es": "Guardar {n} archivo(s) modificado(s)?\nCrea un backup antes si es necesario.",
+        "pt": "Salvar {n} arquivo(s) modificado(s)?\nCrie um backup antes se necess\u00e1rio.",
+        "es": "\u00bfGuardar {n} archivo(s) modificado(s)?\nCrea un backup antes si es necesario.",
     },
     "dialog.backup_ok": {
         "en": "Backup created:\n{path}",
@@ -154,28 +154,28 @@ TRANSLATIONS = {
     # ── Update ──
     "update.title": {
         "en": "Update Available",
-        "pt": "Atualizacao Disponivel",
-        "es": "Actualizacion Disponible",
+        "pt": "Atualiza\u00e7\u00e3o Dispon\u00edvel",
+        "es": "Actualizaci\u00f3n Disponible",
     },
     "update.message": {
         "en": "A new version is available: v{version}\n(current: v{current})\n\nDownload size: {size:.1f} MB\n",
-        "pt": "Nova versao disponivel: v{version}\n(atual: v{current})\n\nTamanho: {size:.1f} MB\n",
-        "es": "Nueva version disponible: v{version}\n(actual: v{current})\n\nTamano: {size:.1f} MB\n",
+        "pt": "Nova vers\u00e3o dispon\u00edvel: v{version}\n(atual: v{current})\n\nTamanho: {size:.1f} MB\n",
+        "es": "Nueva versi\u00f3n disponible: v{version}\n(actual: v{current})\n\nTama\u00f1o: {size:.1f} MB\n",
     },
     "update.confirm": {
         "en": "\nUpdate now?",
         "pt": "\nAtualizar agora?",
-        "es": "\nActualizar ahora?",
+        "es": "\u00bfActualizar ahora?",
     },
     "update.restart": {
         "en": "The app will restart.",
         "pt": "O app vai reiniciar.",
-        "es": "La app se reiniciara.",
+        "es": "La app se reiniciar\u00e1.",
     },
     "update.failed": {
         "en": "Update Failed",
-        "pt": "Falha na Atualizacao",
-        "es": "Error en la Actualizacion",
+        "pt": "Falha na Atualiza\u00e7\u00e3o",
+        "es": "Error en la Actualizaci\u00f3n",
     },
     "update.source_hint": {
         "en": "Running from source. Pull the latest:\ngit pull && git checkout v{v}",
@@ -186,12 +186,12 @@ TRANSLATIONS = {
     # ── Tabs ──
     "tab.stats": {
         "en": "  Stats & Health  ",
-        "pt": "  Stats & Saude  ",
+        "pt": "  Stats & Sa\u00fade  ",
         "es": "  Stats & Salud  ",
     },
     "tab.inventory": {
         "en": "  Inventory  ",
-        "pt": "  Inventario  ",
+        "pt": "  Invent\u00e1rio  ",
         "es": "  Inventario  ",
     },
     "tab.raw": {
@@ -208,8 +208,8 @@ TRANSLATIONS = {
     },
     "sidebar.my_squad": {
         "en": "My Squad",
-        "pt": "Meu Esquadrao",
-        "es": "Mi Escuadron",
+        "pt": "Meu Esquadr\u00e3o",
+        "es": "Mi Escuadr\u00f3n",
     },
     "sidebar.npcs": {
         "en": "NPCs",
@@ -218,7 +218,7 @@ TRANSLATIONS = {
     },
     "sidebar.factions": {
         "en": "Factions",
-        "pt": "Faccoes",
+        "pt": "Fac\u00e7\u00f5es",
         "es": "Facciones",
     },
     "sidebar.records": {
@@ -240,7 +240,7 @@ TRANSLATIONS = {
     },
     "char.no_stats": {
         "en": "This character has no stats record (may be an animal or robot)",
-        "pt": "Este personagem nao tem registro de stats (pode ser animal ou robo)",
+        "pt": "Este personagem n\u00e3o tem registro de stats (pode ser animal ou rob\u00f4)",
         "es": "Este personaje no tiene registro de stats (puede ser animal o robot)",
     },
     "char.blood": {
@@ -267,7 +267,7 @@ TRANSLATIONS = {
     },
     "section.health": {
         "en": "Health",
-        "pt": "Saude",
+        "pt": "Sa\u00fade",
         "es": "Salud",
     },
     "section.limbs": {
@@ -279,39 +279,39 @@ TRANSLATIONS = {
     # ── Faction Editor ──
     "faction.title": {
         "en": "Faction Relations",
-        "pt": "Relacoes de Faccao",
-        "es": "Relaciones de Faccion",
+        "pt": "Rela\u00e7\u00f5es de Fac\u00e7\u00e3o",
+        "es": "Relaciones de Facci\u00f3n",
     },
     "faction.relations_of": {
         "en": "Relations: {name}",
-        "pt": "Relacoes: {name}",
+        "pt": "Rela\u00e7\u00f5es: {name}",
         "es": "Relaciones: {name}",
     },
     "faction.col_faction": {
         "en": "Faction",
-        "pt": "Faccao",
-        "es": "Faccion",
+        "pt": "Fac\u00e7\u00e3o",
+        "es": "Facci\u00f3n",
     },
     "faction.col_relation": {
         "en": "Relation",
-        "pt": "Relacao",
-        "es": "Relacion",
+        "pt": "Rela\u00e7\u00e3o",
+        "es": "Relaci\u00f3n",
     },
     "faction.col_trust": {
         "en": "Trust",
-        "pt": "Confianca",
+        "pt": "Confian\u00e7a",
         "es": "Confianza",
     },
     "faction.col_trust_neg": {
         "en": "Trust Negative",
-        "pt": "Confianca Negativa",
+        "pt": "Confian\u00e7a Negativa",
         "es": "Confianza Negativa",
     },
 
     # ── Inventory ──
     "inv.title": {
         "en": "Inventory",
-        "pt": "Inventario",
+        "pt": "Invent\u00e1rio",
         "es": "Inventario",
     },
 
