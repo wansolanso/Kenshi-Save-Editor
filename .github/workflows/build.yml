@@ -25,10 +25,10 @@ jobs:
           pip install -r requirements.txt
           pip install nuitka ordered-set zstandard
 
-      - name: Build standalone with Nuitka
+      - name: Build onefile with Nuitka
         run: |
           python -m nuitka `
-            --standalone `
+            --onefile `
             --windows-console-mode=disable `
             --windows-company-name="Kenshi Save Editor" `
             --windows-product-name="Kenshi Save Editor" `
@@ -45,38 +45,26 @@ jobs:
             --assume-yes-for-downloads `
             entry.py
 
-      - name: Build Inno Setup installer
-        run: |
-          iscc installer.iss
-
       - name: Generate checksums
         shell: bash
         run: |
           cd dist
-          sha256sum KenshiSaveEditor-Setup-*.exe > CHECKSUMS.txt
-          sha256sum entry.dist/KenshiSaveEditor.exe >> CHECKSUMS.txt
+          sha256sum KenshiSaveEditor.exe > CHECKSUMS.txt
           echo "Built from: ${{ github.sha }} (${{ github.ref_name }})" >> CHECKSUMS.txt
           cat CHECKSUMS.txt
-
-      - name: Create zip of standalone
-        shell: pwsh
-        run: |
-          Compress-Archive -Path dist/entry.dist/* -DestinationPath dist/KenshiSaveEditor-${{ github.ref_name }}-portable.zip
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: kenshi-save-editor-${{ github.ref_name }}
           path: |
-            dist/KenshiSaveEditor-Setup-*.exe
-            dist/KenshiSaveEditor-*-portable.zip
+            dist/KenshiSaveEditor.exe
             dist/CHECKSUMS.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/KenshiSaveEditor-Setup-*.exe
-            dist/KenshiSaveEditor-*-portable.zip
+            dist/KenshiSaveEditor.exe
             dist/CHECKSUMS.txt
           generate_release_notes: true
