@@ -137,10 +137,11 @@ class InventoryEditor(QWidget):
             if row >= self.table.rowCount():
                 break
 
-            # Slot
+            # Slot - use raw value stored in UserRole, not the display name
             slot_item = self.table.item(row, 1)
             if slot_item:
-                item_rec.string_fields["section"] = slot_item.text()
+                raw_slot = slot_item.data(Qt.ItemDataRole.UserRole)
+                item_rec.string_fields["section"] = raw_slot if raw_slot else slot_item.text()
 
             # Quantity
             try:

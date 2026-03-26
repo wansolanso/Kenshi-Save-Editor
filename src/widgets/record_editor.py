@@ -218,21 +218,31 @@ class RecordEditor(QWidget):
             return
 
         for row in range(self.bool_table.rowCount()):
-            key = self.bool_table.item(row, 0).text()
-            val_text = self.bool_table.item(row, 1).text().strip().lower()
+            key_item = self.bool_table.item(row, 0)
+            val_item = self.bool_table.item(row, 1)
+            if not key_item or not val_item:
+                continue
+            key = key_item.text()
+            val_text = val_item.text().strip().lower()
             rec.bool_fields[key] = val_text in ("true", "1", "yes")
 
         for row in range(self.float_table.rowCount()):
-            key = self.float_table.item(row, 0).text()
+            key_item = self.float_table.item(row, 0)
+            val_item = self.float_table.item(row, 1)
+            if not key_item or not val_item:
+                continue
             try:
-                rec.float_fields[key] = float(self.float_table.item(row, 1).text())
+                rec.float_fields[key_item.text()] = float(val_item.text())
             except ValueError:
                 pass
 
         for row in range(self.long_table.rowCount()):
-            key = self.long_table.item(row, 0).text()
+            key_item = self.long_table.item(row, 0)
+            val_item = self.long_table.item(row, 1)
+            if not key_item or not val_item:
+                continue
             try:
-                rec.long_fields[key] = int(self.long_table.item(row, 1).text())
+                rec.long_fields[key_item.text()] = int(val_item.text())
             except ValueError:
                 pass
 
@@ -262,12 +272,18 @@ class RecordEditor(QWidget):
                 pass
 
         for row in range(self.string_table.rowCount()):
-            key = self.string_table.item(row, 0).text()
-            rec.string_fields[key] = self.string_table.item(row, 1).text()
+            key_item = self.string_table.item(row, 0)
+            val_item = self.string_table.item(row, 1)
+            if not key_item or not val_item:
+                continue
+            rec.string_fields[key_item.text()] = val_item.text()
 
         for row in range(self.file_table.rowCount()):
-            key = self.file_table.item(row, 0).text()
-            rec.filename_fields[key] = self.file_table.item(row, 1).text()
+            key_item = self.file_table.item(row, 0)
+            val_item = self.file_table.item(row, 1)
+            if not key_item or not val_item:
+                continue
+            rec.filename_fields[key_item.text()] = val_item.text()
 
     def clear(self):
         self._current_record = None

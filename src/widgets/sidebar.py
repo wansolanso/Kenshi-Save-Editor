@@ -405,52 +405,51 @@ class Sidebar(QWidget):
             self._add_section(t("sidebar.npcs"), total_npc, False, npc_squads, is_player=False)
 
         # 3. Factions (from quick.save) with relation to player
-        if not filt or filt in "factions":
-            def _is_real_faction(name: str) -> bool:
-                up = name.upper().strip()
-                low = name.lower()
-                return not (
-                    up.startswith("BOOLEAN") or
-                    up.startswith("ZSPAWNER") or
-                    up.startswith("DCR ") or
-                    up.startswith("DCR_") or
-                    up.startswith("DEBUG ") or
-                    up.startswith("DEX") or
-                    "spawner" in low or
-                    "template" in low or
-                    "test" in low or
-                    "dialogue unlock" in low or
-                    up in ("FACTION", "NONE", "NULL", "DEFAULT")
-                )
-            factions = [(f, r) for f, r in self.manager.get_factions()
-                        if _is_real_faction(r.name) and (not filt or filt in r.name.lower())]
-            if factions:
-                # Find the player faction index in the relation system
-                player_rel_idx = self._find_player_faction_index()
+        def _is_real_faction(name: str) -> bool:
+            up = name.upper().strip()
+            low = name.lower()
+            return not (
+                up.startswith("BOOLEAN") or
+                up.startswith("ZSPAWNER") or
+                up.startswith("DCR ") or
+                up.startswith("DCR_") or
+                up.startswith("DEBUG ") or
+                up.startswith("DEX") or
+                "spawner" in low or
+                "template" in low or
+                "test" in low or
+                "dialogue unlock" in low or
+                up in ("FACTION", "NONE", "NULL", "DEFAULT")
+            )
+        factions = [(f, r) for f, r in self.manager.get_factions()
+                    if _is_real_faction(r.name) and (not filt or filt in r.name.lower())]
+        if factions:
+            # Find the player faction index in the relation system
+            player_rel_idx = self._find_player_faction_index()
 
-                header = SectionHeader(t("sidebar.factions"), len(factions), expanded=False)
-                self.content_layout.addWidget(header)
-                container = QWidget()
-                container_layout = QVBoxLayout(container)
-                container_layout.setContentsMargins(0, 0, 0, 0)
-                container_layout.setSpacing(2)
-                container.setVisible(False)
-                header.toggled.connect(container.setVisible)
+            header = SectionHeader(t("sidebar.factions"), len(factions), expanded=False)
+            self.content_layout.addWidget(header)
+            container = QWidget()
+            container_layout = QVBoxLayout(container)
+            container_layout.setContentsMargins(0, 0, 0, 0)
+            container_layout.setSpacing(2)
+            container.setVisible(False)
+            header.toggled.connect(container.setVisible)
 
-                # Sort: allies first, then neutral, then enemies
-                def sort_key(item):
-                    _, rec = item
-                    rel = rec.float_fields.get(f"relation{player_rel_idx}", 0.0) if player_rel_idx else 0.0
-                    return (-rel, rec.name)  # positive first, then by name
+            # Sort: allies first, then neutral, then enemies
+            def sort_key(item):
+                _, rec = item
+                rel = rec.float_fields.get(f"relation{player_rel_idx}", 0.0) if player_rel_idx else 0.0
+                return (-rel, rec.name)  # positive first, then by name
 
-                for fname, rec in sorted(factions, key=sort_key):
-                    rel = rec.float_fields.get(f"relation{player_rel_idx}", 0.0) if player_rel_idx else 0.0
-                    card = FactionCard(fname, rec, relation=rel)
-                    card.clicked.connect(self._on_card_clicked)
-                    self._cards.append(card)
-                    container_layout.addWidget(card)
+            for fname, rec in sorted(factions, key=sort_key):
+                rel = rec.float_fields.get(f"relation{player_rel_idx}", 0.0) if player_rel_idx else 0.0
+                card = FactionCard(fname, rec, relation=rel)
+                card.clicked.connect(self._on_card_clicked)
+                self._cards.append(card)
+                container_layout.addWidget(card)
 
-                self.content_layout.addWidget(container)
+            self.content_layout.addWidget(container)
 
         self.content_layout.addStretch()
 

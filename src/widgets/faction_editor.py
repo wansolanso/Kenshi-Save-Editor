@@ -152,7 +152,10 @@ class FactionEditor(QWidget):
         if not rec:
             return
         for row in range(self.table.rowCount()):
-            fid = self.table.item(row, 0).data(Qt.ItemDataRole.UserRole) or self.table.item(row, 0).text()
+            id_item = self.table.item(row, 0)
+            if not id_item:
+                continue
+            fid = id_item.data(Qt.ItemDataRole.UserRole) or id_item.text()
             for col, prefix in [(1, "relation"), (2, "trust"), (3, "trustNeg")]:
                 key = f"{prefix}{fid}"
                 item = self.table.item(row, col)
