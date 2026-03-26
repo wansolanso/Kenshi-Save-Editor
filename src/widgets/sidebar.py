@@ -366,6 +366,8 @@ class Sidebar(QWidget):
                 name = rec.string_fields.get("name", "")
                 if filt and filt not in name.lower():
                     continue
+                # Find stats: adjacent scan first, then name search in same file,
+                # then name search across all files
                 stats = None
                 for r2 in sf.records[i+1:]:
                     if r2.typecode == 36:
@@ -373,10 +375,20 @@ class Sidebar(QWidget):
                     if r2.typecode == 25:
                         stats = r2
                         break
-                if stats is None:
+                if stats is None and name:
                     for r2 in sf.records:
                         if r2.typecode == 25 and r2.name == name:
                             stats = r2
+                            break
+                if stats is None and name:
+                    for other_fname, other_sf in sorted(self.manager.files.items()):
+                        if other_fname == fname:
+                            continue
+                        for r2 in other_sf.records:
+                            if r2.typecode == 25 and r2.name == name:
+                                stats = r2
+                                break
+                        if stats is not None:
                             break
                 chars_data.append((fname, rec, stats))
 

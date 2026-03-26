@@ -47,6 +47,8 @@ class CharacterEditor(QWidget):
         self._stats_record: Record | None = None
         self._medical_record: Record | None = None
         self._filename: str = ""
+        self._stats_filename: str = ""
+        self._medical_filename: str = ""
         self._updating = False
         self._setup_ui()
 
@@ -231,12 +233,15 @@ class CharacterEditor(QWidget):
         outer.addWidget(scroll)
 
     def load_character(self, filename: str, char_rec: Record,
-                       stats_rec: Record | None, medical_rec: Record | None):
+                       stats_rec: Record | None, medical_rec: Record | None,
+                       stats_filename: str = "", medical_filename: str = ""):
         self._updating = True
         self._char_record = char_rec
         self._stats_record = stats_rec
         self._medical_record = medical_rec
         self._filename = filename
+        self._stats_filename = stats_filename or filename
+        self._medical_filename = medical_filename or filename
 
         # Info
         self.name_edit.setText(char_rec.string_fields.get("name", ""))
@@ -303,6 +308,9 @@ class CharacterEditor(QWidget):
             self.stat_bars[key].setValue(min(100, int(spin.value())))
         self._apply_changes()
         self.record_modified.emit(self._filename)
+        # Stats may be in a different file than the character
+        if self._stats_filename and self._stats_filename != self._filename:
+            self.record_modified.emit(self._stats_filename)
 
     def _on_changed(self):
         if self._updating:
@@ -315,6 +323,9 @@ class CharacterEditor(QWidget):
             return
         self._apply_health()
         self.record_modified.emit(self._filename)
+        # Medical may be in a different file than the character
+        if self._medical_filename and self._medical_filename != self._filename:
+            self.record_modified.emit(self._medical_filename)
 
     def _apply_changes(self):
         rec = self._char_record
@@ -356,6 +367,8 @@ class CharacterEditor(QWidget):
         self._char_record = None
         self._stats_record = None
         self._medical_record = None
+        self._stats_filename = ""
+        self._medical_filename = ""
         self.name_edit.clear()
         self.faction_label.setText("-")
         self.age_spin.setValue(1.0)
